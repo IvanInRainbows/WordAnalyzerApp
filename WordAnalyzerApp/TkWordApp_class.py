@@ -46,26 +46,32 @@ class Semantics(ttk.Frame): #esta clase procesa y muestra toda la informacion se
             }
         
         for i in wn.synsets(w, lang=self.lang):
-            for l in i.lemmas(): #Logica para los sinonimos de aleman
+            for l in i.lemmas(): #Logica para los sinonimos
                 if l.title() != w:
                     rt["Syns"].append(l.title())
                     
-            for h in i.hypernyms(): #Logica para los hiperonimos de aleman
+            for h in i.hypernyms(): #Logica para los hiperonimos
                 for e in h.lemmas():
                     rt["Hipers"].append(e.title())
 
-            for h in i.hyponyms(): #Logica para los hiponimos de aleman
+            for h in i.hyponyms(): #Logica para los hiponimos
                 for e in h.lemmas():
                     rt["Hipos"].append(e.title())
                 
-            for s in i.senses(): #Logica para los antonimos en aleman, ocurre lo mismo que en el resto de idiomas
+            for s in i.senses(): #Logica para los antonimos
                 for trad in s.translate(lang="en"):
                     for a in trad.get_related("antonym"):
                         for t in a.translate(lang=self.lang):
                             rt["Ants"].append(t.word().lemma())
                 
-            if len(self.defin.get()) < 5: #Para la definicion en aleman
-                self.defin.set(i.definition())
+            if len(self.defin.get()) < 5: #Para la definicion
+                if i.definition() != None:
+                    self.defin.set(i.definition())
+                else:
+                    for t in i.translate(lang="en"):
+                        if t.definition() != None:
+                            self.defin.set(t.definition())
+                            break
 
         return RemoveDupes(rt)
     def setOutput(self, w):
@@ -118,14 +124,14 @@ class PartWholeRelationship(tk.Label):
     def update(self):
         sFrame = ttk.Frame(self.master)
         sFrame.columnconfigure(0, weight=1)
-        ttk.Label(sFrame, text=(self.title+" de membresía"), relief=tk.RIDGE).grid(column="0", row="0", sticky=(tk.NSEW))
-        ttk.Label(sFrame, text=(self.title+ " de sustancia"), relief=tk.RIDGE).grid(column="0", row="1", sticky=(tk.NSEW))
-        ttk.Label(sFrame, text=(self.title+ " de parte"), relief=tk.RIDGE).grid(column="0", row="2", sticky=(tk.NSEW))
+        ttk.Label(sFrame, text=(self.title+" de membresía"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="0", sticky=(tk.NSEW))
+        ttk.Label(sFrame, text=(self.title+ " de sustancia"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="1", sticky=(tk.NSEW))
+        ttk.Label(sFrame, text=(self.title+ " de parte"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="2", sticky=(tk.NSEW))
         sFrame2 = ttk.Frame(self.master)
         sFrame2.columnconfigure(0, weight=1)
-        ttk.Label(sFrame2, textvariable=self.member, relief=tk.RIDGE, wraplength=400).grid(column="0", row="0", sticky=(tk.NSEW), columnspan=2)
-        ttk.Label(sFrame2, textvariable=self.substance, relief=tk.RIDGE, wraplength=400).grid(column="0", row="1", sticky=(tk.NSEW), columnspan=2)
-        ttk.Label(sFrame2, textvariable=self.part, relief=tk.RIDGE, wraplength=400).grid(column="0", row="2", sticky=(tk.NSEW), columnspan=2)
+        ttk.Label(sFrame2, textvariable=self.member, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="0", sticky=(tk.NSEW), columnspan=2)
+        ttk.Label(sFrame2, textvariable=self.substance, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="1", sticky=(tk.NSEW), columnspan=2)
+        ttk.Label(sFrame2, textvariable=self.part, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="2", sticky=(tk.NSEW), columnspan=2)
         sFrame.grid(column=1, row=self.row, sticky=(tk.NSEW))
         sFrame2.grid(column=2, row=self.row, sticky=(tk.NSEW), columnspan=2)
 
@@ -147,19 +153,19 @@ class PartWholeRelationship(tk.Label):
             "part":[]
             }
         for synset in wn.synsets(word, lang=lang):
-            for mer in synset.member_meronyms():
-                for l in mer.lemmas(lang=lang):
-                    out["member"].append(l.name())
+            for mer in synset.get_related("mero_member"):
+                for l in mer.words():
+                    out["member"].append(l.lemma())
 
         for synset in wn.synsets(word, lang=lang):
-            for mer in synset.substance_meronyms():
-                for l in mer.lemmas(lang=lang):
-                    out["substance"].append(l.name())
+            for mer in synset.get_related("mero_substance"):
+                for l in mer.words():
+                    out["substance"].append(l.lemma())
 
         for synset in wn.synsets(word, lang=lang):
-            for mer in synset.part_meronyms():
-                for l in mer.lemmas(lang=lang):
-                    out["part"].append(l.name())
+            for mer in synset.get_related("mero_part"):
+                for l in mer.words():
+                    out["part"].append(l.lemma())
         return out
     def holonyms(self, word, lang):
         out = {
@@ -169,18 +175,18 @@ class PartWholeRelationship(tk.Label):
             }
         for synset in wn.synsets(word, lang=lang):
             for mer in synset.get_related("holo_member"):
-                for l in mer.lemmas(lang=lang):
-                    out["member"].append(l.name())
+                for l in mer.words():
+                    out["member"].append(l.lemma())
 
         for synset in wn.synsets(word, lang=lang):
-            for mer in synset.substance_holonyms():
-                for l in mer.lemmas(lang=lang):
-                    out["substance"].append(l.name())
+            for mer in synset.get_related("holo_substance"):
+                for l in mer.words():
+                    out["substance"].append(l.lemma())
 
         for synset in wn.synsets(word, lang=lang):
-            for mer in synset.part_holonyms():
-                for l in mer.lemmas(lang=lang):
-                    out["part"].append(l.name())
+            for mer in synset.get_related("holo_part"):
+                for l in mer.words():
+                    out["part"].append(l.lemma())
         return out
 
     def debugAttrs(self):
