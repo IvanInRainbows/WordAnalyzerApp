@@ -44,6 +44,9 @@ ttk.Label(frame, text="Introduce una palabra").grid(column="1", row="0")
 wEntry = ttk.Entry(frame, textvariable=word, width = 15, takefocus=True).grid(column="2", row="0")
 ttk.Button(frame, text="Buscar", command=partial(sem.setOutput, word)).grid(column="3", row="0")
 frame.grid(column="0", row="0")
+
+subRoot.update()
+print(sem.grid_bbox(1,1))
 ttk.Button(subRoot, command=partial(close, subRoot), text="Cerrar").grid(column=4, row=3)
 
 subRoot.mainloop()
