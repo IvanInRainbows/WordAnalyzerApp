@@ -15,9 +15,9 @@ def RemoveDupes(dic): #gets a dictionary composed of strings as keys and lists a
 #wn.add_exomw()
 #wn.add_omw()
 hFront = ("Arial", 12, "bold") #Title font
-maxLen = 300 #Max lenght of a displayed text in characters before is displayer with the scrollbar
+maxLen = 300 #Max lenght of a displayed text in characters before is displayed with the scrollbar
 maxSize = { #Max size of the TextScroll widget
-    "V":150,
+    "V":80,
     "H":300
     }
 
@@ -36,6 +36,21 @@ class TextScroll (ttk.Frame): #Instantiates a Scrollable text with a given size 
         self.canvas.create_window((0,0), window=self.innerFrame, anchor=tk.NW)
         self.canvas.grid(column=0, row=0, sticky=tk.NSEW)
         self.scroll.grid(column=1, row=0, sticky=tk.NS)
+
+class TextScrollH (ttk.Frame): #Same As previous but in horizontal
+    def __init__(self, master, tx, width):
+        super().__init__(master, relief=tk.RIDGE, padding="5 5 5 5")
+        self.tx = tx
+        self.canvas = tk.Canvas(self, height=20, width=width)
+        self.scroll = tk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.canvas.xview, width=6)
+        self.innerFrame = ttk.Frame(self.canvas)
+        self.innerFrame.grid(column=0, row=0, sticky=tk.NSEW)
+        ttk.Label(self.innerFrame, textvariable=self.tx, justify=tk.LEFT).grid(column=0, row=0, sticky=tk.EW)
+        self.canvas.configure(xscrollcommand=self.scroll.set)
+        self.canvas.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.create_window((0,0), window=self.innerFrame, anchor=tk.NW)
+        self.canvas.grid(column=0, row=0, sticky=tk.NSEW)
+        self.scroll.grid(column=0, row=1, sticky=tk.EW)
 
 class Semantics(ttk.Frame): #A class to process and display all the semantic information of the word
     def __init__(self, master):
@@ -163,11 +178,14 @@ class Semantics(ttk.Frame): #A class to process and display all the semantic inf
 
 class PartWholeRelationship(tk.Label): #intended to use inside semantics object. Computes and displays all the semantic information related to part-whole relationships
     def __init__(self, master, row, isMeronym = True):
-        self.member = tk.StringVar()
-        self.part = tk.StringVar()
-        self.substance = tk.StringVar()
+        self.MeroDict = {
+            "member":tk.StringVar(),
+            "substance":tk.StringVar(),
+            "part":tk.StringVar()
+            }
         self.master = master
         self.row = row
+        self.widgetController = []
         if isMeronym:
             self.title = "Merónimos"
         else:
@@ -176,6 +194,7 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
         self.grid(column=0, row=row, sticky=(tk.NSEW))
         self.update()
     def update(self):
+        self.resetVarWidgets()
         sFrame = ttk.Frame(self.master)
         sFrame.columnconfigure(0, weight=1)
         ttk.Label(sFrame, text=(self.title+" de membresía"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="0", sticky=(tk.NSEW))
@@ -183,9 +202,20 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
         ttk.Label(sFrame, text=(self.title+ " de parte"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="2", sticky=(tk.NSEW))
         sFrame2 = ttk.Frame(self.master)
         sFrame2.columnconfigure(0, weight=1)
-        ttk.Label(sFrame2, textvariable=self.member, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="0", sticky=(tk.NSEW), columnspan=2)
-        ttk.Label(sFrame2, textvariable=self.substance, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="1", sticky=(tk.NSEW), columnspan=2)
-        ttk.Label(sFrame2, textvariable=self.part, relief=tk.RIDGE, wraplength=400, padding="5 5 5 5").grid(column="0", row="2", sticky=(tk.NSEW), columnspan=2)
+
+        iterator = 0
+        for k in self.MeroDict:
+            
+            if (len(self.MeroDict[k].get())<85):
+                w = ttk.Label(sFrame2, textvariable=self.MeroDict[k], relief=tk.RIDGE, wraplength=400, padding="5 5 5 5")
+                self.widgetController.append(w)
+                w.grid(column="0", row=iterator, sticky=(tk.NSEW), columnspan=2)
+            else:
+                w = TextScrollH(sFrame2, self.MeroDict[k], 400)
+                self.widgetController.append(w)
+                w.grid(column="0", row=iterator, sticky=(tk.NSEW), columnspan=2)
+            iterator+=1
+
         sFrame.grid(column=1, row=self.row, sticky=(tk.NSEW))
         sFrame2.grid(column=2, row=self.row, sticky=(tk.NSEW), columnspan=2)
 
@@ -197,9 +227,9 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
         else:
             tmpDict = self.holonyms(word, lang)
         
-        self.member.set(", ".join(tmpDict["member"]))
-        self.substance.set(", ".join(tmpDict['substance']))
-        self.part.set(", ".join(tmpDict["part"]))
+        self.MeroDict["member"].set(", ".join(tmpDict["member"]))
+        self.MeroDict['substance'].set(", ".join(tmpDict['substance']))
+        self.MeroDict["part"].set(", ".join(tmpDict["part"]))
     def meronyms(self, word, lang):
         out = {
             "member":[],
@@ -243,11 +273,10 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
                     out["part"].append(l.lemma())
         return out
 
-    def debugAttrs(self):
-        print("part: " + self.part.get())
-        print("member: " + self.member.get())
-        print("substance: " + self.substance.get())
-
+    def resetVarWidgets(self): #resets all the variable labels so they don't instantiate twice and overlap
+        for i in self.widgetController:
+            i.destroy()
+        self.widgetController = []
 
 
 class Morphology(ttk.Frame):
