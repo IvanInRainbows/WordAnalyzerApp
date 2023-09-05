@@ -45,7 +45,7 @@ class TextScrollH (ttk.Frame): #Same As previous but in horizontal
         self.scroll = tk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.canvas.xview, width=6)
         self.innerFrame = ttk.Frame(self.canvas)
         self.innerFrame.grid(column=0, row=0, sticky=tk.NSEW)
-        ttk.Label(self.innerFrame, textvariable=self.tx, justify=tk.LEFT).grid(column=0, row=0, sticky=tk.EW)
+        ttk.Label(self.innerFrame, textvariable=self.tx, justify=tk.CENTER).grid(column=0, row=0, sticky=tk.EW)
         self.canvas.configure(xscrollcommand=self.scroll.set)
         self.canvas.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.canvas.create_window((0,0), window=self.innerFrame, anchor=tk.NW)
@@ -181,7 +181,9 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
         self.MeroDict = {
             "member":tk.StringVar(),
             "substance":tk.StringVar(),
-            "part":tk.StringVar()
+            "part":tk.StringVar(),
+            "location":tk.StringVar(),
+            "portion":tk.StringVar()
             }
         self.master = master
         self.row = row
@@ -196,29 +198,27 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
     def update(self):
         self.resetVarWidgets()
         sFrame = ttk.Frame(self.master)
-        sFrame.columnconfigure(0, weight=1)
+        sFrame.columnconfigure(1, weight=1)
         ttk.Label(sFrame, text=(self.title+" de membresía"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="0", sticky=(tk.NSEW))
         ttk.Label(sFrame, text=(self.title+ " de sustancia"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="1", sticky=(tk.NSEW))
         ttk.Label(sFrame, text=(self.title+ " de parte"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="2", sticky=(tk.NSEW))
-        sFrame2 = ttk.Frame(self.master)
-        sFrame2.columnconfigure(0, weight=1)
+        ttk.Label(sFrame, text=(self.title+ " de localización"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="3", sticky=(tk.NSEW))
+        ttk.Label(sFrame, text=(self.title+ " de porción"), relief=tk.RIDGE, padding="5 5 5 5").grid(column="0", row="4", sticky=(tk.NSEW))
 
         iterator = 0
         for k in self.MeroDict:
             
-            if (len(self.MeroDict[k].get())<85):
-                w = ttk.Label(sFrame2, textvariable=self.MeroDict[k], relief=tk.RIDGE, wraplength=400, padding="5 5 5 5")
+            if (len(self.MeroDict[k].get())<85): #the number is the max lenght of the text in chars
+                w = ttk.Label(sFrame, textvariable=self.MeroDict[k], relief=tk.RIDGE, wraplength=400, padding="5 5 5 5")
                 self.widgetController.append(w)
-                w.grid(column="0", row=iterator, sticky=(tk.NSEW), columnspan=2)
+                w.grid(column="1", row=iterator, sticky=(tk.NSEW), columnspan=2)
             else:
-                w = TextScrollH(sFrame2, self.MeroDict[k], 400)
+                w = TextScrollH(sFrame, self.MeroDict[k], 480)
                 self.widgetController.append(w)
-                w.grid(column="0", row=iterator, sticky=(tk.NSEW), columnspan=2)
+                w.grid(column="1", row=iterator, sticky=(tk.NSEW), columnspan=2)
             iterator+=1
 
-        sFrame.grid(column=1, row=self.row, sticky=(tk.NSEW))
-        sFrame2.grid(column=2, row=self.row, sticky=(tk.NSEW), columnspan=2)
-
+        sFrame.grid(column=1, row=self.row, sticky=(tk.NSEW), columnspan=3)
 
     def setOutput(self, word, lang):
         tmpDict = {}
@@ -230,11 +230,15 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
         self.MeroDict["member"].set(", ".join(tmpDict["member"]))
         self.MeroDict['substance'].set(", ".join(tmpDict['substance']))
         self.MeroDict["part"].set(", ".join(tmpDict["part"]))
+        self.MeroDict["location"].set(", ".join(tmpDict["location"]))
+        self.MeroDict["portion"].set(", ".join(tmpDict["portion"]))
     def meronyms(self, word, lang):
         out = {
             "member":[],
             "substance":[],
-            "part":[]
+            "part":[],
+            "location":[],
+            "portion":[]
             }
         for synset in wn.synsets(word, lang=lang):
             for mer in synset.get_related("mero_member"):
@@ -250,12 +254,24 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
             for mer in synset.get_related("mero_part"):
                 for l in mer.words():
                     out["part"].append(l.lemma())
+
+        for synset in wn.synsets(word, lang=lang):
+            for mer in synset.get_related("mero_location"):
+                for l in mer.words():
+                    out["location"].append(l.lemma())
+
+        for synset in wn.synsets(word, lang=lang):
+            for mer in synset.get_related("mero_portion"):
+                for l in mer.words():
+                    out["portion"].append(l.lemma())
         return out
     def holonyms(self, word, lang):
         out = {
             "member":[],
             "substance":[],
-            "part":[]
+            "part":[],
+            "location":[],
+            "portion":[]
             }
         for synset in wn.synsets(word, lang=lang):
             for mer in synset.get_related("holo_member"):
@@ -271,6 +287,16 @@ class PartWholeRelationship(tk.Label): #intended to use inside semantics object.
             for mer in synset.get_related("holo_part"):
                 for l in mer.words():
                     out["part"].append(l.lemma())
+
+        for synset in wn.synsets(word, lang=lang):
+            for mer in synset.get_related("holo_location"):
+                for l in mer.words():
+                    out["location"].append(l.lemma())
+
+        for synset in wn.synsets(word, lang=lang):
+            for mer in synset.get_related("holo_portion"):
+                for l in mer.words():
+                    out["portion"].append(l.lemma())
         return out
 
     def resetVarWidgets(self): #resets all the variable labels so they don't instantiate twice and overlap
@@ -284,3 +310,4 @@ class Morphology(ttk.Frame):
         super().__init__(master)
         self.derivation = tk.StringVar()
         self.number = tk.StringVar()
+        ttk.Label(self, text="Sample text").grid(column=0, row=0)
